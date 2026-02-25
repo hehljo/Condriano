@@ -53,11 +53,15 @@
 - [ ] Monatlicher Rebalancing-Alert
 - [ ] Sparplan-Empfehlungen basierend auf Marktlage
 
-## Phase 5: Backtesting & Optimierung
+## Phase 5: Backtesting & Optimierung ✅
 
-- [ ] Backtesting-Engine aufbauen
-- [ ] Score-System historisch validieren
-- [ ] Backtesting-Ergebnisse via Telegram als Chart
+- [x] Backtesting-Engine aufbauen
+- [x] Score-System historisch validieren (2J historische Daten)
+- [x] Backtesting-Ergebnisse via Telegram als Chart (/backtest)
+- [x] Buy & Hold Vergleich + Max Drawdown Analyse
+- [x] Position Sizing Fix (EUR/USD via EZB)
+- [x] Doppelkauf-Schutz (gleiche Aktie nicht 2x am Tag)
+- [x] Portfolio in Morgen-Report integriert
 - [ ] Strategie-Optimierung basierend auf Backtesting
 
 ## Phase 6: Passives Einkommen skalieren

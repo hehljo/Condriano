@@ -60,16 +60,43 @@ def build_morning_report() -> str:
             "  VIX moderat erhöht - 120% des normalen Betrags\n"
         )
 
+    # Portfolio aus T212
+    portfolio_text = ""
+    try:
+        from src.broker.trading212 import Trading212
+        broker = Trading212()
+        positions = broker.get_positions()
+        cash = broker.get_account_cash()
+
+        if positions:
+            portfolio_text = "\n💼 <b>Dein Portfolio:</b>\n"
+            total_ppl = 0
+            for p in positions:
+                ppl = p.get("ppl", 0)
+                ppl_pct = p.get("pplPercentage", 0)
+                total_ppl += ppl
+                emoji = "🟢" if ppl >= 0 else "🔴"
+                portfolio_text += f"  {emoji} {p.get('ticker', '?')}: {p.get('quantity', 0):.2f} Stk | {ppl:+.2f}€ ({ppl_pct:+.1f}%)\n"
+
+            free = cash.get("free", 0)
+            total = cash.get("total", 0)
+            total_emoji = "🟢" if total_ppl >= 0 else "🔴"
+            portfolio_text += f"  {total_emoji} <b>Gesamt: {total:.2f}€ | P&L: {total_ppl:+.2f}€</b>\n"
+            portfolio_text += f"  💶 Cash: {free:.2f}€\n"
+    except Exception as e:
+        logger.error(f"Portfolio im Report Fehler: {e}")
+
     report = (
         f"📈 <b>Morgen-Report {now}</b>\n"
         f"{'='*30}\n\n"
         f"🌍 <b>Indizes:</b>\n{idx_text}"
         f"{vix_text}"
         f"{fg_text}"
+        f"{portfolio_text}"
         f"{sig_text}"
         f"{dca_text}"
         f"\n{'='*30}\n"
-        f"💡 /signal für Details | /watchlist für Watchlist"
+        f"💡 /signal für Details | /t212pos für Portfolio"
     )
     return report
 

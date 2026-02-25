@@ -316,6 +316,50 @@ async def cmd_autotrade(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❓ Unbekannter Befehl. Schreib /autotrade für Hilfe.")
 
 
+async def cmd_backtest(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Backtesting des Score-Systems über historische Daten"""
+    from src.backtest.engine import backtest_score_strategy, format_backtest_message, generate_backtest_chart
+
+    # Parameter parsen
+    period = "2y"
+    initial_cash = 100.0
+    tickers = None
+
+    if context.args:
+        for arg in context.args:
+            if arg.endswith(("y", "mo", "d")):
+                period = arg
+            elif arg.replace(".", "").isdigit():
+                initial_cash = float(arg)
+            elif "," in arg:
+                tickers = arg.upper().split(",")
+
+    await update.message.reply_text(
+        f"⏳ Backtest läuft... ({period}, {initial_cash}€)\n"
+        "Das kann 10-30 Sekunden dauern."
+    )
+
+    try:
+        result = backtest_score_strategy(
+            tickers=tickers, period=period, initial_cash=initial_cash
+        )
+        msg = format_backtest_message(result)
+        await update.message.reply_text(msg, parse_mode="HTML")
+
+        # Chart generieren und senden
+        if "error" not in result and result.get("portfolio_history"):
+            try:
+                chart_path = generate_backtest_chart(result)
+                from src.bot.telegram_bot import bot
+                await bot.send_photo(chart_path)
+            except Exception as e:
+                logger.error(f"Backtest Chart Fehler: {e}")
+
+    except Exception as e:
+        logger.error(f"Backtest Fehler: {e}")
+        await update.message.reply_text(f"❌ Backtest fehlgeschlagen: {e}")
+
+
 def register_trading_handlers(app):
     app.add_handler(CommandHandler("t212status", cmd_t212status))
     app.add_handler(CommandHandler("t212pos", cmd_t212positions))
@@ -325,3 +369,4 @@ def register_trading_handlers(app):
     app.add_handler(CommandHandler("t212cancel", cmd_t212cancel))
     app.add_handler(CommandHandler("t212div", cmd_t212dividends))
     app.add_handler(CommandHandler("autotrade", cmd_autotrade))
+    app.add_handler(CommandHandler("backtest", cmd_backtest))

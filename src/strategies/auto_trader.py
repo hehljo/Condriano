@@ -215,13 +215,14 @@ def scan_opportunities(config: dict = None) -> dict:
     }
 
 
-def calculate_position_size(price: float, config: dict = None) -> float:
-    """Berechnet optimale Positionsgröße"""
+def calculate_position_size(ticker: str, price: float, config: dict = None) -> float:
+    """Berechnet optimale Positionsgröße inkl. EUR/USD Umrechnung"""
     if config is None:
         config = load_config()
 
     try:
         from src.broker.trading212 import Trading212
+        from src.market.sources import ecb_eurusd
         broker = Trading212()
         cash = broker.get_account_cash()
         free = cash.get("free", 0)
@@ -238,15 +239,43 @@ def calculate_position_size(price: float, config: dict = None) -> float:
         # Max Position als % des Portfolios
         if total > 0:
             max_for_ticker = total * (config["max_position_pct"] / 100)
-            trade_amount = min(trade_amount, max_for_ticker)
+            # Bereits investierten Betrag abziehen
+            positions = broker.get_positions()
+            already_invested = 0
+            for p in positions:
+                if p.get("ticker") == ticker:
+                    already_invested = p.get("investedValue", 0)
+            remaining_for_ticker = max_for_ticker - already_invested
+            trade_amount = min(trade_amount, max(remaining_for_ticker, 0))
+
+        if trade_amount < 1.0:
+            return 0
+
+        # USD-Aktien: EUR → USD umrechnen
+        price_in_eur = price
+        if ticker.endswith("_US_EQ"):
+            eurusd = ecb_eurusd()
+            price_in_eur = price / eurusd  # USD-Preis in EUR umrechnen
 
         # Stückzahl berechnen (2 Dezimalstellen für T212)
-        quantity = round(trade_amount / price, 2)
-        return max(quantity, 0.01)  # Minimum 0.01
+        quantity = round(trade_amount / price_in_eur, 2)
+        return max(quantity, 0.01)
 
     except Exception as e:
         logger.error(f"Position Size Fehler: {e}")
         return 0
+
+
+def _get_today_trades() -> list:
+    """Holt alle heutigen Auto-Trades aus der DB"""
+    from src.utils.database import get_connection
+    conn = get_connection()
+    rows = conn.execute(
+        """SELECT ticker, alert_type FROM alerts_log
+        WHERE date(timestamp) = date('now') AND alert_type IN ('auto_buy', 'auto_sell')"""
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
 
 
 def execute_auto_trades(opportunities: dict, config: dict = None) -> list:
@@ -258,27 +287,44 @@ def execute_auto_trades(opportunities: dict, config: dict = None) -> list:
         return []
 
     executed = []
+    today_trades = _get_today_trades()
+    today_buys = [t["ticker"] for t in today_trades if t["alert_type"] == "auto_buy"]
+    trades_today_count = len(today_trades)
 
     try:
         from src.broker.trading212 import Trading212
         broker = Trading212()
 
         # Käufe
-        for candidate in opportunities["buy"][:config["max_trades_per_day"]]:
-            qty = calculate_position_size(candidate["price"], config)
+        for candidate in opportunities["buy"]:
+            # Max Trades pro Tag erreicht?
+            if trades_today_count >= config["max_trades_per_day"]:
+                logger.info(f"Max Trades/Tag ({config['max_trades_per_day']}) erreicht")
+                break
+
+            # Doppelkauf-Schutz: gleiche Aktie heute schon gekauft?
+            if candidate["ticker"] in today_buys:
+                logger.info(f"Doppelkauf-Schutz: {candidate['ticker']} heute schon gekauft")
+                continue
+
+            qty = calculate_position_size(candidate["ticker"], candidate["price"], config)
             if qty > 0:
                 try:
                     result = broker.market_order(candidate["ticker"], qty)
+                    order_id = result.get("id")
                     executed.append({
                         "action": "BUY",
                         "ticker": candidate["ticker"],
                         "quantity": qty,
                         "price": candidate["price"],
                         "score": candidate["score"],
-                        "order_id": result.get("id"),
+                        "order_id": order_id,
+                        "status": result.get("status", "?"),
                         "reasons": candidate["reasons"],
                     })
-                    log_alert("auto_buy", f"{candidate['ticker']} {qty} Stk @ {candidate['price']}")
+                    log_alert("auto_buy", f"{candidate['ticker']} {qty} Stk @ {candidate['price']} (Order #{order_id})")
+                    trades_today_count += 1
+                    today_buys.append(candidate["ticker"])
                 except Exception as e:
                     logger.error(f"Auto-Buy Fehler {candidate['ticker']}: {e}")
 
