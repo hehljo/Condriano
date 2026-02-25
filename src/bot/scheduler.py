@@ -121,30 +121,44 @@ async def job_signal_scan():
 
 
 async def job_market_alert():
-    """Prüft auf starke Marktbewegungen (>2%) - VIX invertiert"""
-    logger.info("Markt-Alert Check...")
-    indices = market_data.get_indices()
-    alerts = []
-    for idx in indices:
-        if abs(idx["change_pct"]) >= 2.0:
-            name = idx["name"]
+    """Prüft Portfolio-Positionen auf starke Bewegungen"""
+    logger.info("Portfolio-Alert Check...")
 
-            # VIX ist invertiert: VIX fällt = gut, VIX steigt = schlecht
-            if name == "VIX":
-                if idx["change_pct"] > 0:
-                    alerts.append(f"⚠️ VIX steigt {idx['change_pct']:+.2f}% - Angst nimmt zu")
-                else:
-                    alerts.append(f"😎 VIX fällt {idx['change_pct']:+.2f}% - Markt entspannt sich")
-            else:
-                direction = "📈 RALLYE" if idx["change_pct"] > 0 else "📉 CRASH"
-                alerts.append(f"{direction} {name}: {idx['change_pct']:+.2f}%")
+    try:
+        from src.broker.trading212 import Trading212
+        broker = Trading212()
+        positions = broker.get_positions()
 
-    if alerts:
-        text = "🚨 <b>MARKT-ALARM!</b>\n\n" + "\n".join(alerts)
-        vix = market_data.get_vix()
-        if vix:
-            text += f"\n\nVIX: {vix['price']} - {vix['signal']}"
-        await bot.send_message(text)
+        if not positions:
+            return
+
+        alerts = []
+        for pos in positions:
+            ppl_pct = pos.get("pplPercentage", 0)
+            ticker = pos.get("ticker", "")
+            ppl = pos.get("ppl", 0)
+
+            if ppl_pct >= 5.0:
+                alerts.append(f"🟢 <b>{ticker}</b>: {ppl_pct:+.1f}% ({ppl:+.2f}€) - Läuft gut!")
+            elif ppl_pct >= 10.0:
+                alerts.append(f"🚀 <b>{ticker}</b>: {ppl_pct:+.1f}% ({ppl:+.2f}€) - Take-Profit prüfen!")
+            elif ppl_pct <= -5.0:
+                alerts.append(f"🔴 <b>{ticker}</b>: {ppl_pct:+.1f}% ({ppl:+.2f}€) - Beobachten!")
+            elif ppl_pct <= -8.0:
+                alerts.append(f"⚠️ <b>{ticker}</b>: {ppl_pct:+.1f}% ({ppl:+.2f}€) - Stop-Loss nahe!")
+
+        if alerts:
+            summary = broker.get_portfolio_value()
+            emoji = "🟢" if summary["pnl"] >= 0 else "🔴"
+            text = (
+                f"📋 <b>Portfolio-Alert</b>\n\n"
+                + "\n".join(alerts)
+                + f"\n\n{emoji} Gesamt: {summary['pnl']:+.2f}€ ({summary['pnl_pct']:+.1f}%)"
+            )
+            await bot.send_message(text)
+
+    except Exception as e:
+        logger.error(f"Portfolio-Alert Fehler: {e}")
 
 
 async def job_snapshot():
