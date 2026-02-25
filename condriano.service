@@ -1,0 +1,24 @@
+[Unit]
+Description=Condriano Auto-Trading Bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/Finanz
+ExecStart=/root/Finanz/venv/bin/python3 main.py
+Restart=always
+RestartSec=15
+Environment=PYTHONUNBUFFERED=1
+
+# Resource Limits
+MemoryMax=256M
+CPUQuota=25%
+
+# Logging
+StandardOutput=append:/root/Finanz/data/condriano.log
+StandardError=append:/root/Finanz/data/condriano-error.log
+
+[Install]
+WantedBy=multi-user.target

@@ -289,3 +289,44 @@ Der Bot verbindet sich mit dem bestehenden Trading 212 Konto und sieht sofort al
 | Scheduling | APScheduler | Gratis |
 
 **Gesamtkosten Infrastruktur: 0 €**
+
+---
+
+## Ressourcenverbrauch
+
+| Ressource | Wert | Details |
+|---|---|---|
+| **RAM** | ~90 MB | Alle Module geladen, idle |
+| **CPU** | ~0.1% | 99.9% idle, 2–5% bei Scans (5–10 Sek) |
+| **Disk (Code)** | ~1 MB | Ohne venv |
+| **Disk (venv)** | ~314 MB | Alle Dependencies |
+| **Disk (DB)** | ~5–10 MB/Monat | Snapshots, Signale, Historie |
+| **Netzwerk** | ~2 MB/Tag | ~50 API-Calls (Yahoo, T212, Telegram) |
+| **Min. Server** | 1 vCPU, 512 MB RAM | Raspberry Pi reicht |
+
+Der Bot läuft problemlos auf einem Raspberry Pi, kleinen VPS oder jedem Linux-Server.
+
+---
+
+## systemd Service (Dauerbetrieb)
+
+Die Datei `condriano.service` ist im Repo enthalten:
+
+```bash
+# Service installieren
+sudo cp condriano.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable condriano
+sudo systemctl start condriano
+
+# Status prüfen
+sudo systemctl status condriano
+
+# Logs ansehen
+journalctl -u condriano -f
+
+# Neustart
+sudo systemctl restart condriano
+```
+
+Der Service startet automatisch bei Server-Reboot und wird bei Crashes nach 15 Sekunden neu gestartet.
