@@ -1,0 +1,57 @@
+{
+  "enabled": true,
+  "mode": "full",
+  "max_trade_eur": 25.0,
+  "min_cash_reserve": 5.0,
+  "max_position_pct": 30.0,
+  "buy_score_threshold": 50,
+  "alert_score_threshold": 30,
+  "take_profit_pct": 15.0,
+  "stop_loss_pct": -10.0,
+  "max_trades_per_day": 3,
+  "watchlist": [
+    "AAPL_US_EQ",
+    "MSFT_US_EQ",
+    "GOOGL_US_EQ",
+    "AMZN_US_EQ",
+    "NVDA_US_EQ",
+    "JNJ_US_EQ",
+    "PG_US_EQ",
+    "KO_US_EQ",
+    "SAPd_EQ",
+    "SIEd_EQ",
+    "ALVd_EQ",
+    "EUNLd_EQ",
+    "SXR8d_EQ"
+  ],
+  "ticker_map": {
+    "AAPL_US_EQ": "AAPL",
+    "MSFT_US_EQ": "MSFT",
+    "GOOGL_US_EQ": "GOOGL",
+    "AMZN_US_EQ": "AMZN",
+    "NVDA_US_EQ": "NVDA",
+    "JNJ_US_EQ": "JNJ",
+    "PG_US_EQ": "PG",
+    "KO_US_EQ": "KO",
+    "SAPd_EQ": "SAP.DE",
+    "SIEd_EQ": "SIE.DE",
+    "ALVd_EQ": "ALV.DE",
+    "EUNLd_EQ": "EUNL.DE",
+    "SXR8d_EQ": "SXR8.DE"
+  },
+  "score_weights": {
+    "rsi_oversold_30": 30,
+    "rsi_oversold_20": 40,
+    "below_sma200": 20,
+    "below_bollinger": 15,
+    "vix_high": 15,
+    "fear_extreme": 10
+  },
+  "sell_weights": {
+    "rsi_overbought_70": 30,
+    "rsi_overbought_80": 40,
+    "above_bollinger": 15,
+    "take_profit": 50,
+    "stop_loss": 100
+  }
+}

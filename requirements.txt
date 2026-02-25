@@ -1,0 +1,8 @@
+python-telegram-bot==21.6
+yfinance==0.2.36
+pandas==2.2.0
+numpy==1.26.3
+apscheduler==3.10.4
+python-dotenv==1.0.0
+matplotlib==3.8.2
+requests==2.31.0
