@@ -1,6 +1,7 @@
 import requests
 import logging
 import base64
+import time
 from typing import Optional
 from src.utils.config import T212_API_KEY, T212_API_SECRET, T212_MODE
 
@@ -26,19 +27,39 @@ class Trading212:
             "Authorization": f"Basic {creds}",
             "Content-Type": "application/json",
         })
+        self._last_request = 0
 
-    def _request(self, method: str, path: str, **kwargs) -> dict:
+    def _request(self, method: str, path: str, retries: int = 3, **kwargs) -> dict:
         url = f"{self.base_url}{path}"
-        try:
-            r = self.session.request(method, url, timeout=15, **kwargs)
-            r.raise_for_status()
-            return r.json() if r.text else {}
-        except requests.exceptions.HTTPError as e:
-            logger.error(f"T212 API Fehler {r.status_code}: {r.text}")
-            raise
-        except Exception as e:
-            logger.error(f"T212 Request Fehler: {e}")
-            raise
+        for attempt in range(retries):
+            try:
+                # Rate-Limit: min 0.5s zwischen Requests
+                now = time.time()
+                elapsed = now - self._last_request
+                if elapsed < 0.5:
+                    time.sleep(0.5 - elapsed)
+                self._last_request = time.time()
+
+                r = self.session.request(method, url, timeout=15, **kwargs)
+
+                if r.status_code == 429:
+                    wait = min(2 ** attempt * 2, 30)
+                    logger.warning(f"T212 Rate-Limit, warte {wait}s (Versuch {attempt+1}/{retries})")
+                    time.sleep(wait)
+                    continue
+
+                r.raise_for_status()
+                return r.json() if r.text else {}
+            except requests.exceptions.HTTPError as e:
+                if r.status_code != 429:
+                    logger.error(f"T212 API Fehler {r.status_code}: {r.text}")
+                    raise
+            except Exception as e:
+                logger.error(f"T212 Request Fehler: {e}")
+                if attempt == retries - 1:
+                    raise
+                time.sleep(2)
+        return {}
 
     # --- Account ---
 
