@@ -121,14 +121,23 @@ async def job_signal_scan():
 
 
 async def job_market_alert():
-    """Prüft auf starke Marktbewegungen (>2%)"""
+    """Prüft auf starke Marktbewegungen (>2%) - VIX invertiert"""
     logger.info("Markt-Alert Check...")
     indices = market_data.get_indices()
     alerts = []
     for idx in indices:
         if abs(idx["change_pct"]) >= 2.0:
-            direction = "📈 RALLYE" if idx["change_pct"] > 0 else "📉 CRASH"
-            alerts.append(f"{direction} {idx['name']}: {idx['change_pct']:+.2f}%")
+            name = idx["name"]
+
+            # VIX ist invertiert: VIX fällt = gut, VIX steigt = schlecht
+            if name == "VIX":
+                if idx["change_pct"] > 0:
+                    alerts.append(f"⚠️ VIX steigt {idx['change_pct']:+.2f}% - Angst nimmt zu")
+                else:
+                    alerts.append(f"😎 VIX fällt {idx['change_pct']:+.2f}% - Markt entspannt sich")
+            else:
+                direction = "📈 RALLYE" if idx["change_pct"] > 0 else "📉 CRASH"
+                alerts.append(f"{direction} {name}: {idx['change_pct']:+.2f}%")
 
     if alerts:
         text = "🚨 <b>MARKT-ALARM!</b>\n\n" + "\n".join(alerts)
