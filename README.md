@@ -1,11 +1,21 @@
 <p align="center">
+  <img src="Condriano.png" width="200" />
+</p>
+
+<h1 align="center">🏦 Condriano</h1>
+
+<p align="center">
+  <i>„Servus, i bin da Condriano — dei persönlicher Finanz-Otter.<br>
+  I kümmer mi um dei Kohle während du auf da Couch liegst.<br>
+  Brille auf, Charts an, und los geht's — oida!"</i>
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/Python-3.12+-3776AB?style=for-the-badge&logo=python&logoColor=white" />
   <img src="https://img.shields.io/badge/Trading_212-API-00B4D8?style=for-the-badge&logo=bitcoin&logoColor=white" />
   <img src="https://img.shields.io/badge/Telegram-Bot-26A5E4?style=for-the-badge&logo=telegram&logoColor=white" />
   <img src="https://img.shields.io/badge/Lizenz-Privat-red?style=for-the-badge" />
 </p>
-
-<h1 align="center">🏦 Condriano</h1>
 
 <p align="center">
   <b>Autonomer Trading-Bot mit Score-basiertem Auto-Trade System</b><br>
