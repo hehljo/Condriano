@@ -244,7 +244,8 @@ def format_backtest_message(result: dict) -> str:
     vs_bh = "📈 Besser" if result["outperformance_pct"] > 0 else "📉 Schlechter"
 
     text = (
-        f"📊 <b>Backtest-Ergebnis</b>\n"
+        f"📊 <b>Backtest-Ergebnis (Simulation)</b>\n"
+        f"⚠️ <i>Historische Simulation - nicht dein echtes Portfolio!</i>\n"
         f"{'='*28}\n\n"
         f"⏱️ Zeitraum: {result['period_years']} Jahre ({result['period_days']} Tage)\n"
         f"💶 Startkapital: {result['initial_cash']}€\n"
