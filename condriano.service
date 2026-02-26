@@ -6,8 +6,8 @@ Wants=network-online.target
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/root/Finanz
-ExecStart=/root/Finanz/venv/bin/python3 main.py
+WorkingDirectory=/root/Finanz/CondrianoInvest
+ExecStart=/root/Finanz/CondrianoInvest/venv/bin/python3 main.py
 Restart=always
 RestartSec=15
 Environment=PYTHONUNBUFFERED=1
@@ -17,8 +17,8 @@ MemoryMax=256M
 CPUQuota=25%
 
 # Logging
-StandardOutput=append:/root/Finanz/data/condriano.log
-StandardError=append:/root/Finanz/data/condriano-error.log
+StandardOutput=append:/root/Finanz/CondrianoInvest/data/condriano.log
+StandardError=append:/root/Finanz/CondrianoInvest/data/condriano-error.log
 
 [Install]
 WantedBy=multi-user.target
