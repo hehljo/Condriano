@@ -3,7 +3,7 @@ import asyncio
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from src.bot.telegram_bot import bot
-from src.market.reports import build_morning_report, build_signal_report
+from src.market.reports import build_morning_report, build_signal_report, build_portfolio_morning_report
 from src.market.data import market_data
 from src.bot.handlers import load_watchlist
 from src.utils.database import (
@@ -106,8 +106,9 @@ async def job_stop_loss_check():
 
 
 async def job_morning_report():
-    logger.info("Morgen-Report wird gesendet...")
-    report = build_morning_report()
+    """Schlanker Morgen-Report: nur Portfolio + Performance"""
+    logger.info("Portfolio Morgen-Report wird gesendet...")
+    report = build_portfolio_morning_report()
     await bot.send_message(report)
 
 
@@ -222,34 +223,21 @@ async def job_weekly_summary():
 def setup_scheduler() -> AsyncIOScheduler:
     scheduler = AsyncIOScheduler(timezone="Europe/Berlin")
 
-    # Morgen-Report Mo-Fr 08:00
+    # Morgen-Report täglich 08:00 (nur Portfolio + Performance)
     scheduler.add_job(
         job_morning_report,
-        CronTrigger(day_of_week="mon-fri", hour=8, minute=0),
+        CronTrigger(hour=8, minute=0),
         id="morning_report",
-        name="Morgen-Report",
+        name="Portfolio Morgen-Report",
     )
 
-    # Signal-Scan Mo-Fr 10:00 und 16:00
-    scheduler.add_job(
-        job_signal_scan,
-        CronTrigger(day_of_week="mon-fri", hour=10, minute=0),
-        id="signal_scan_morning",
-        name="Signal-Scan Vormittag",
-    )
-    scheduler.add_job(
-        job_signal_scan,
-        CronTrigger(day_of_week="mon-fri", hour=16, minute=0),
-        id="signal_scan_afternoon",
-        name="Signal-Scan Nachmittag",
-    )
-
-    # Markt-Alert alle 30 Min während Handelszeiten
+    # Portfolio-Alert alle 30 Min während Handelszeiten
+    # (nur eigene Positionen, keine allgemeinen Signale)
     scheduler.add_job(
         job_market_alert,
         CronTrigger(day_of_week="mon-fri", hour="9-17", minute="*/30"),
         id="market_alert",
-        name="Markt-Alert",
+        name="Portfolio-Alert",
     )
 
     # DB Snapshots Mo-Fr 12:00 und 18:00
@@ -274,40 +262,12 @@ def setup_scheduler() -> AsyncIOScheduler:
         name="Portfolio Snapshot",
     )
 
-    # Auto-Trade Scan Mo-Fr 09:30, 14:00, 15:30 (Börsenöffnung EU + US)
-    scheduler.add_job(
-        job_auto_trade,
-        CronTrigger(day_of_week="mon-fri", hour=9, minute=30),
-        id="auto_trade_eu_open",
-        name="Auto-Trade EU Open",
-    )
-    scheduler.add_job(
-        job_auto_trade,
-        CronTrigger(day_of_week="mon-fri", hour=14, minute=0),
-        id="auto_trade_pre_us",
-        name="Auto-Trade Pre-US",
-    )
-    scheduler.add_job(
-        job_auto_trade,
-        CronTrigger(day_of_week="mon-fri", hour=15, minute=30),
-        id="auto_trade_us_open",
-        name="Auto-Trade US Open",
-    )
-
     # Stop-Loss / Take-Profit Check alle 30 Min während Handelszeiten
     scheduler.add_job(
         job_stop_loss_check,
         CronTrigger(day_of_week="mon-fri", hour="9-22", minute="*/30"),
         id="stop_loss_check",
         name="Stop-Loss Check",
-    )
-
-    # Wöchentlicher Report Sonntag 18:00
-    scheduler.add_job(
-        job_weekly_summary,
-        CronTrigger(day_of_week="sun", hour=18, minute=0),
-        id="weekly_summary",
-        name="Wöchentlicher Report",
     )
 
     return scheduler

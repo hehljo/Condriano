@@ -101,6 +101,58 @@ def build_morning_report() -> str:
     return report
 
 
+def build_portfolio_morning_report() -> str:
+    """Schlanker Morgen-Report: nur eigenes Portfolio + Performance"""
+    now = datetime.now().strftime("%d.%m.%Y %H:%M")
+
+    try:
+        from src.broker.trading212 import Trading212
+        broker = Trading212()
+        positions = broker.get_positions()
+        cash = broker.get_account_cash()
+    except Exception as e:
+        logger.error(f"Portfolio-Report Fehler: {e}")
+        return f"📈 <b>Morgen-Report {now}</b>\n\n❌ Portfolio nicht erreichbar: {e}"
+
+    if not positions:
+        free = cash.get("free", 0) if cash else 0
+        return (
+            f"📈 <b>Morgen-Report {now}</b>\n\n"
+            f"Keine offenen Positionen.\n"
+            f"💶 Cash: {free:.2f}€"
+        )
+
+    total_ppl = 0
+    total_invested = 0
+    lines = []
+    for p in positions:
+        ppl = p.get("ppl", 0)
+        ppl_pct = p.get("pplPercentage", 0)
+        invested = p.get("investedValue", 0)
+        total_ppl += ppl
+        total_invested += invested
+        emoji = "🟢" if ppl >= 0 else "🔴"
+        lines.append(f"  {emoji} <b>{p.get('ticker', '?')}</b>: {ppl:+.2f}€ ({ppl_pct:+.1f}%)")
+
+    free = cash.get("free", 0) if cash else 0
+    total = cash.get("total", 0) if cash else 0
+    total_emoji = "🟢" if total_ppl >= 0 else "🔴"
+
+    text = (
+        f"📈 <b>Morgen-Report {now}</b>\n"
+        f"{'='*28}\n\n"
+        f"💼 <b>Portfolio:</b>\n"
+        + "\n".join(lines) + "\n\n"
+        f"{total_emoji} <b>P&L: {total_ppl:+.2f}€</b>\n"
+        f"💰 Investiert: {total_invested:.2f}€\n"
+        f"💶 Cash: {free:.2f}€\n"
+        f"📊 Gesamt: {total:.2f}€\n"
+        f"\n{'='*28}\n"
+        f"💡 /t212pos für Details"
+    )
+    return text
+
+
 def build_signal_report(watchlist: list = None) -> str:
     signals = market_data.scan_signals(watchlist)
 
