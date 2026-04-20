@@ -77,7 +77,7 @@ All thresholds are configurable via `/autotrade set` or `config/auto_trade.json`
 
 - Python 3.11+
 - A [Telegram Bot](https://t.me/BotFather) (free, takes 30 seconds)
-- Optional: [Trading 212](https://www.trading212.com/) Invest account for live trading
+- Optional: [Trading 212](https://www.trading212.com/) Invest account for live trading (see [broker comparison](docs/BROKER_COMPARISON.md) for why)
 
 ### 1. Clone & Setup
 
